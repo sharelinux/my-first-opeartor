@@ -1,0 +1,24 @@
+# permissions for end users to edit modelboxes.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: modelbox-editor-role
+rules:
+- apiGroups:
+  - model.github.com
+  resources:
+  - modelboxes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - model.github.com
+  resources:
+  - modelboxes/status
+  verbs:
+  - get

@@ -1,0 +1,16 @@
+domain: github.com
+layout:
+- go.kubebuilder.io/v3
+projectName: my-first-opeartor
+repo: github.com/sharelinuxs/my-first-opeartor
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: github.com
+  group: model
+  kind: ModelBox
+  path: github.com/sharelinuxs/my-first-opeartor/api/v1
+  version: v1
+version: "3"

@@ -1,0 +1,14 @@
+apiVersion: model.github.com/v1
+kind: ModelBox
+metadata:
+  name: modelbox-sample
+spec:
+  # Add fields here
+  name: "nginx"
+  image: "nginx:1.7.9"
+  replicas: 4
+  rollingUpdate: 30%
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30010
