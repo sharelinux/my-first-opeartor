@@ -34,7 +34,7 @@ type ModelBoxSpec struct {
 	Name          string                      `json:"name,omitempty"`          // 服务名称
 	Image         string                      `json:"image,omitempty"`         // 镜像
 	Replicas      *int32                      `json:"replicas,omitempty"`      // 副本数
-	Ports         []corev1.ServicePort        `json:"ports"`                   //  服务端口
+	Ports         []corev1.ServicePort        `json:"ports"`                   // 服务端口
 	Resources     corev1.ResourceRequirements `json:"resources,omitempty"`     // 资源配额
 	Envs          []corev1.EnvVar             `json:"envs,omitempty"`          // 环境变量
 	RollingUpdate string                      `json:"rollingUpdate,omitempty"` // 配置滚动更新百分比
