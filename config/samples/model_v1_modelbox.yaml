@@ -1,7 +1,7 @@
 apiVersion: model.github.com/v1
 kind: ModelBox
 metadata:
-  name: modelbox-sample
+  name: modelbox-sample1
   # namespace: dev
 spec:
   # Add fields here
@@ -9,7 +9,7 @@ spec:
   image: "nginx:1.7.9"
   replicas: 2
   rollingUpdate: 30%
-  resourceType: "medium"
+  resourceType: "small"
   modelFileURL: "https://model-management.s3.cn-north-1.aws.com/model/example-model.zip"
   serviceType: ClusterIP
   ports:
