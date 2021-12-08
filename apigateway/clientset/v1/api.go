@@ -6,6 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 type ModelBoxV1Alpha1Interface interface {
@@ -23,7 +24,7 @@ func NewForConfig(c *rest.Config) (*ModelBoxV1Alpha1Client, error) {
 	config.ContentConfig.GroupVersion = &schema.GroupVersion{Group: modelv1.GroupName, Version: modelv1.Version}
 	config.APIPath = "/apis"
 	config.UserAgent = rest.DefaultKubernetesUserAgent()
-	// TODO {User} 该类型目前不存在 DirectCodecFactory
+	// 该类型目前不存在 DirectCodecFactory
 	//config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: scheme.Codecs}
 	config.NegotiatedSerializer = serializer.WithoutConversionCodecFactory{CodecFactory: scheme.Codecs}
 	config.UserAgent = rest.DefaultKubernetesUserAgent()
@@ -38,8 +39,13 @@ func NewForConfig(c *rest.Config) (*ModelBoxV1Alpha1Client, error) {
 }
 
 func (c *ModelBoxV1Alpha1Client) ModelBoxes(namespace string) ModelBoxInterface {
+	crScheme, err := newCRScheme(SchemeBuilder...)
+	if err != nil {
+		klog.Errorf("ModelBoxes newCRScheme : %v", err)
+	}
 	return &modelBoxClient{
 		restClient: c.restClient,
 		ns:         namespace,
+		crScheme:   crScheme,
 	}
 }
