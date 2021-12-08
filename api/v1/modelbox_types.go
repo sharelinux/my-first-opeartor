@@ -31,13 +31,18 @@ type ModelBoxSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Name is an example field of ModelBox. Edit modelbox_types.go to remove/update
-	Name          string                      `json:"name,omitempty"`          // 服务名称
-	Image         string                      `json:"image,omitempty"`         // 镜像
-	Replicas      *int32                      `json:"replicas,omitempty"`      // 副本数
-	Ports         []corev1.ServicePort        `json:"ports"`                   // 服务端口
-	Resources     corev1.ResourceRequirements `json:"resources,omitempty"`     // 资源配额
-	Envs          []corev1.EnvVar             `json:"envs,omitempty"`          // 环境变量
-	RollingUpdate string                      `json:"rollingUpdate,omitempty"` // 配置滚动更新百分比
+	Name           string                      `json:"name,omitempty"`           // 服务名称
+	Image          string                      `json:"image,omitempty"`          // 镜像
+	Replicas       *int32                      `json:"replicas,omitempty"`       // 副本数
+	ModelFileURL   string                      `json:"modelFileURL,omitempty"`   // 模型文件
+	ServiceType    corev1.ServiceType          `json:"serviceType,omitempty"`    // 服务类型
+	Ports          []corev1.ServicePort        `json:"ports"`                    // 服务端口
+	Resources      corev1.ResourceRequirements `json:"resources,omitempty"`      // 资源配额
+	ResourceType   string                      `json:"resourceType,omitempty"`   // 资源规格
+	Envs           []corev1.EnvVar             `json:"envs,omitempty"`           // 环境变量
+	RollingUpdate  string                      `json:"rollingUpdate"`            // 配置滚动更新百分比
+	ReadinessProbe *corev1.Probe               `json:"readinessProbe,omitempty"` // 就绪探针
+	LivenessProbe  *corev1.Probe               `json:"livenessProbe,omitempty"`  // 存活探针
 }
 
 // ModelBoxStatus defines the observed state of ModelBox

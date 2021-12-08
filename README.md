@@ -6,6 +6,9 @@
 2. 支持非自助删除Deployment、Service、Pod资源的自动创建和监视。
 3. 支持多Container和InitContainer的注入。
 4. 支持设置滚动更新的比例。
+5. 支持基于语义的资源规则限制，small、medium、large、custom等
+6. 支持Service自定义映射, ClusterIP、NodePort等。
+7. 支持注入默认的服务存活探针和就绪探针的检测功能。
 
 ### 基于kubebuilder脚手架创建自己的Operator代码框架
 

@@ -24,11 +24,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
+const (
+	GroupName = "model.github.com"
+	Version   = "v1"
+	Kind      = "ModelBox"
+)
+
 var (
 	// GroupVersion is group version used to register these objects
 	GroupVersion = schema.GroupVersion{Group: "model.github.com", Version: "v1"}
-
-	Kind = "ModelBox"
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}

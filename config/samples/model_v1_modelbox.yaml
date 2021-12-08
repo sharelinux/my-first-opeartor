@@ -2,13 +2,17 @@ apiVersion: model.github.com/v1
 kind: ModelBox
 metadata:
   name: modelbox-sample
+  # namespace: dev
 spec:
   # Add fields here
   name: "nginx"
   image: "nginx:1.7.9"
-  replicas: 4
+  replicas: 2
   rollingUpdate: 30%
+  resourceType: "medium"
+  modelFileURL: "https://model-management.s3.cn-north-1.aws.com/model/example-model.zip"
+  serviceType: ClusterIP
   ports:
-  - port: 80
-    targetPort: 80
-    nodePort: 30010
+    - name: app-port
+      port: 80
+      targetPort: 80

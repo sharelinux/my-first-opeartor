@@ -3,6 +3,7 @@ package controllers
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -46,11 +47,37 @@ func NewDeploy(modelbox *modelv1.ModelBox) *appsv1.Deployment {
 				Spec: corev1.PodSpec{
 					InitContainers: newInitContainers(modelbox),
 					Containers:     newContainers(modelbox),
+					Volumes:        newVolumes(modelbox),
 				},
 			},
 			Selector: selector,
 		},
 	}
+}
+
+func newVolumes(modelbox *modelv1.ModelBox) []corev1.Volume {
+	var volumes []corev1.Volume
+	// 模型下载存储空间
+	modelFileVolume := corev1.Volume{
+		Name: "model-volume",
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	}
+	volumes = append(volumes, modelFileVolume)
+
+	// localtime
+	localFileVolume := corev1.Volume{
+		Name: "localtime",
+		VolumeSource: corev1.VolumeSource{
+			HostPath: &corev1.HostPathVolumeSource{
+				Path: "/etc/localtime",
+			},
+		},
+	}
+	volumes = append(volumes, localFileVolume)
+
+	return volumes
 }
 
 // NewService 创建 modelbox 的 kubernetes Service
@@ -69,7 +96,8 @@ func NewService(modelbox *modelv1.ModelBox) *corev1.Service {
 		Spec: corev1.ServiceSpec{
 			Ports: modelbox.Spec.Ports,
 			// 此处可以定义为 Ingress
-			Type: corev1.ServiceTypeNodePort,
+			Type: modelbox.Spec.ServiceType,
+			//Type: corev1.ServiceTypeNodePort,
 			Selector: map[string]string{
 				"modelbox": modelbox.Name,
 			},
@@ -104,9 +132,18 @@ func newContainers(modelbox *modelv1.ModelBox) []corev1.Container {
 	containers = append(containers, corev1.Container{
 		Name:      modelbox.Name,
 		Image:     modelbox.Spec.Image,
-		Resources: modelbox.Spec.Resources,
+		Resources: newResourceRequirements(modelbox),
 		Env:       modelbox.Spec.Envs,
 		Ports:     containerPorts,
+		//Command: []string{"start"},
+		//ReadinessProbe: newReadinessProbe(modelbox), // 注入就绪探针，检测成功就关联svc
+		//LivenessProbe:  newLivenessProbe(modelbox),  // 注入存活探针，检测失败就重启或者终止该容器
+		VolumeMounts: []corev1.VolumeMount{
+			corev1.VolumeMount{
+				Name:      "model-volume",
+				MountPath: "/app/model",
+			},
+		},
 	})
 
 	// 添加一个通用容器
@@ -114,7 +151,7 @@ func newContainers(modelbox *modelv1.ModelBox) []corev1.Container {
 		Name:      "db-container",
 		Image:     "busybox",
 		Command:   []string{"/bin/sh", "-c", "sleep 86400"},
-		Resources: modelbox.Spec.Resources,
+		Resources: newResourceRequirements(modelbox),
 		Env:       modelbox.Spec.Envs,
 	})
 
@@ -138,12 +175,122 @@ func newInitContainers(modelbox *modelv1.ModelBox) []corev1.Container {
 
 	// 注入 InitContainer
 	containers = append(containers, corev1.Container{
-		Name:      "init-container",
-		Image:     "busybox",
-		Command:   []string{"/bin/sh", "-c", "sleep 60 && touch /tmp/done"},
-		Resources: modelbox.Spec.Resources,
+		Name:  "init-container",
+		Image: "busybox",
+		//Image: "dockerhub.jd.com/mbox-base/s3_client:v1.0",
+		Command: []string{"/bin/sh", "-c", "sleep 3 && touch /tmp/done"},
+		//Command: []string{"/root/s3client"},
+		//Resources: modelbox.Spec.Resources,
+		Resources: newResourceTypeRequirements("small"),
 		Env:       modelbox.Spec.Envs,
+		VolumeMounts: []corev1.VolumeMount{
+			{
+				Name:      "model-volume",
+				MountPath: "/app/model",
+			},
+		},
 	})
 
 	return containers
+}
+
+func newResourceRequirements(modelbox *modelv1.ModelBox) corev1.ResourceRequirements {
+	var rr corev1.ResourceRequirements
+
+	resourceType := modelbox.Spec.ResourceType
+	switch resourceType {
+	case "small":
+		rr = newResourceTypeRequirements(resourceType)
+	case "medium":
+		rr = newResourceTypeRequirements(resourceType)
+	case "large":
+		rr = newResourceTypeRequirements(resourceType)
+	case "custom":
+		rr = modelbox.Spec.Resources
+	}
+
+	return rr
+}
+
+func newResourceTypeRequirements(resourceType string) corev1.ResourceRequirements {
+	var rr corev1.ResourceRequirements
+	var resourceCPU string
+	var resourceMemory string
+
+	switch resourceType {
+	case "small":
+		resourceCPU = "1000m"
+		resourceMemory = "2Gi"
+	case "medium":
+		resourceCPU = "2000m"
+		resourceMemory = "4Gi"
+	case "large":
+		resourceCPU = "4000m"
+		resourceMemory = "8Gi"
+	}
+
+	rr.Limits = corev1.ResourceList{
+		corev1.ResourceCPU:    resource.MustParse(resourceCPU),
+		corev1.ResourceMemory: resource.MustParse(resourceMemory),
+	}
+	rr.Requests = corev1.ResourceList{
+		corev1.ResourceCPU:    resource.MustParse(resourceCPU),
+		corev1.ResourceMemory: resource.MustParse(resourceMemory),
+	}
+
+	return rr
+}
+
+func newReadinessProbe(modelbox *modelv1.ModelBox) *corev1.Probe {
+	if modelbox.Spec.ReadinessProbe != nil {
+		return modelbox.Spec.ReadinessProbe
+	}
+	//readinessProbe:
+	//	initialDelaySeconds: 20
+	//	periodSeconds: 5
+	//	timeoutSeconds: 10
+	//	httpGet:
+	//		scheme: HTTP
+	//		port: 8081
+	//		path: /actuator/health
+	return &corev1.Probe{
+		InitialDelaySeconds: 10,
+		PeriodSeconds:       5,
+		TimeoutSeconds:      10,
+		Handler: corev1.Handler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Scheme: corev1.URISchemeHTTP,
+				Port:   intstr.FromInt(8080),
+				Path:   "/healthz",
+			},
+		},
+	}
+}
+
+func newLivenessProbe(modelbox *modelv1.ModelBox) *corev1.Probe {
+	if modelbox.Spec.LivenessProbe != nil {
+		return modelbox.Spec.LivenessProbe
+	}
+
+	//livenessProbe:
+	//  initialDelaySeconds: 30
+	//  periodSeconds: 10
+	//  timeoutSeconds: 5
+	//  httpGet:
+	//    scheme: HTTP
+	//    port: 8081
+	//    path: /health
+
+	return &corev1.Probe{
+		InitialDelaySeconds: 10,
+		PeriodSeconds:       5,
+		TimeoutSeconds:      10,
+		Handler: corev1.Handler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Scheme: corev1.URISchemeHTTP,
+				Port:   intstr.FromInt(8080),
+				Path:   "/healthz",
+			},
+		},
+	}
 }
