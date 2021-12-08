@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/sirupsen/logrus"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"os"
 	"path/filepath"
@@ -144,7 +147,6 @@ func main() {
 	//	fmt.Printf("item: %v\n", item)
 	//}
 
-
 	// TODO: 创建CR
 	aStr := `{
     "apiVersion": "model.github.com/v1",
@@ -182,6 +184,49 @@ func main() {
 	if err != nil {
 		fmt.Printf("cl.Create: %v\n", err)
 	}
+
+	// modified
+	mb := modelv1.ModelBox{}
+	crCli, err := NewCRClient(config, SchemeBuilder...)
+	if err != nil {
+		panic(err)
+	}
+
+	// TODO: operator with controller runtime client
+	if err := crCli.Get(context.Background(), client.ObjectKey{
+		Namespace: metav1.NamespaceDefault,
+		Name:      "modelBox's name",
+	}, &mb); err != nil {
+		if k8serrors.IsNotFound(err) {
+			logrus.Errorf("resource not found")
+			return
+		}
+		panic(err)
+	}
+
+	// crCli.List()
+	// crCli.Create()
+	// crCli.Delete()
+
+}
+
+func NewCRClient(rc *rest.Config, schemes ...func(scheme *runtime.Scheme) error) (client.Client, error) {
+	if rc == nil {
+		return nil, fmt.Errorf("failed to get rest.Config")
+	}
+	sc := runtime.NewScheme()
+	schemeBuilder := &runtime.SchemeBuilder{}
+
+	for _, s := range schemes {
+		schemeBuilder.Register(s)
+	}
+
+	if err := schemeBuilder.AddToScheme(sc); err != nil {
+		logrus.Errorf("failed to add scheme, err: %v", err)
+		return nil, err
+	}
+
+	return client.New(rc, client.Options{Scheme: sc})
 }
 
 func homeDir() string {
