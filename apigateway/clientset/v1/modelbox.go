@@ -15,7 +15,7 @@ import (
 type ModelBoxInterface interface {
 	Create(mb *modelv1.ModelBox, opts metav1.CreateOptions) (*modelv1.ModelBox, error)
 	Delete(name string, opts metav1.DeleteOptions) error
-	Get(name string, options metav1.GetOptions) (*modelv1.ModelBox, error)
+	Get(name string, opts metav1.GetOptions) (*modelv1.ModelBox, error)
 	List(opts metav1.ListOptions) (*modelv1.ModelBoxList, error)
 	Watch(opts metav1.ListOptions) (watch.Interface, error)
 	// ...

@@ -177,7 +177,6 @@ func newInitContainers(modelbox *modelv1.ModelBox) []corev1.Container {
 	containers = append(containers, corev1.Container{
 		Name:  "init-container",
 		Image: "busybox",
-		//Image: "dockerhub.jd.com/mbox-base/s3_client:v1.0",
 		Command: []string{"/bin/sh", "-c", "sleep 3 && touch /tmp/done"},
 		//Command: []string{"/root/s3client"},
 		//Resources: modelbox.Spec.Resources,
